@@ -353,6 +353,35 @@ module MiniMagick
       self
     end
 
+
+    def custom_format(format, page = 0)
+      @info.clear
+
+      if @tempfile
+        new_tempfile = MiniMagick::Utilities.tempfile(".#{format}")
+        new_path = new_tempfile.path
+      else
+        new_path = path.sub(/\.\w+$/, ".#{format}")
+      end
+
+      MiniMagick::Tool::Convert.new do |convert|
+        yield convert if block_given?
+        convert << (page ? "#{path}[#{page}]" : path)
+        convert << new_path
+      end
+
+      if @tempfile
+        @tempfile.unlink
+        @tempfile = new_tempfile
+      else
+        File.delete(path) unless path == new_path
+      end
+
+      path.replace new_path
+
+      self
+    end
+
     ##
     # You can use multiple commands together using this method. Very easy to
     # use!
